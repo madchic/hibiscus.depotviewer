@@ -9,6 +9,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 import de.open4me.depot.abruf.utils.Utils;
 import de.willuhn.jameica.hbci.HBCI;
@@ -21,9 +22,15 @@ import de.willuhn.logging.Logger;
 import de.willuhn.util.ApplicationException;
 
 public class SQLUtils {
+	
+
 
 	private static AbstractDBSupportImpl driver = null;
+	public static Supplier< Connection > INSTANCE = null;
 	public static Connection getConnection() throws Exception {
+		if(INSTANCE!=null) {
+			return INSTANCE.get();
+		}
 		if (driver == null) {
 			HBCIDBServiceImpl db = (HBCIDBServiceImpl) Application.getServiceFactory().lookup(HBCI.class,"database");
 			driver = (AbstractDBSupportImpl) db.getDriver();
