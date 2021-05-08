@@ -12,6 +12,8 @@ import org.kapott.hbci.structures.TypedValue;
 
 import de.open4me.depot.abruf.utils.Utils;
 import de.open4me.depot.datenobj.DepotAktion;
+import de.open4me.depot.datenobj.rmi.Umsatz;
+import de.open4me.depot.tools.UmsatzHelper;
 import de.willuhn.jameica.hbci.HBCIProperties;
 import de.willuhn.jameica.hbci.rmi.HibiscusDBObject;
 import de.willuhn.jameica.hbci.rmi.Konto;
@@ -126,6 +128,7 @@ public class HBCIDepotUmsatzJob extends AbstractHBCIJob
 		for (FinancialInstrument i : entries.instruments) {
 			for (Transaction t : i.transactions) {
 				// Einlage Betrag = null; transaction_indicator: 2: Kapitalmassnahme; richtung: 2 Erhalt; bezahlung 2: frei
+				// Auslieferung Betrag = null; transaction_indicator: 2: Corporate Action; richtung: 1 Lieferung; bezahlung 2: frei
 				// Kauf Betrag = -9999, transaction_indicator: : 1: Settlement/Clearing; richtung: 2 Erhalt; bezahlung 2: frei
 				// Verkauf Betrag = 9999, transaction_indicator :1: Settlement/Clearing; richtung 1: Lieferung bezahlung 2: frei
 
@@ -141,6 +144,9 @@ public class HBCIDepotUmsatzJob extends AbstractHBCIJob
 				if (t.transaction_indicator == Transaction.INDICATOR_CORPORATE_ACTION 
 						&& t.richtung == Transaction.RICHTUNG_ERHALT) {
 					aktion = DepotAktion.EINBUCHUNG.internal();
+				} else if (t.transaction_indicator == Transaction.INDICATOR_CORPORATE_ACTION 
+						&& t.richtung == Transaction.RICHTUNG_LIEFERUNG) {
+					aktion = DepotAktion.AUSBUCHUNG.internal();
 				} else if (t.transaction_indicator == Transaction.INDICATOR_SETTLEMENT_CLEARING 
 						&& t.richtung == Transaction.RICHTUNG_ERHALT) {
 					aktion = DepotAktion.KAUF.internal();
@@ -166,7 +172,7 @@ public class HBCIDepotUmsatzJob extends AbstractHBCIJob
 						waehrung = t.betrag.getCurr();
 						einzelbetrag = Math.abs(gesamtbetrag) / t.anzahl.getValue().doubleValue();
 					}
-					Utils.addUmsatz(konto.getID(), 
+					Umsatz u = Utils.addUmsatz(konto.getID(), 
 							Utils.getORcreateWKN(i.wkn, i.isin, i.name), aktion,
 							i.toString() + "\n" + t.toString(),
 							t.anzahl.getValue().doubleValue(),
@@ -176,6 +182,7 @@ public class HBCIDepotUmsatzJob extends AbstractHBCIJob
 							String.valueOf(orderid.hashCode()),
 							"",0.0d, "EUR", 0.0d, "EUR"
 							);
+					UmsatzHelper.storeUmsatzInHibiscus(u);
 				} catch (RemoteException e) {
 					e.printStackTrace();
 					throw new ApplicationException(e);
