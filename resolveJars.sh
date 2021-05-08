@@ -15,7 +15,7 @@ rm bin_build/* -R
 rm manifest.txt
 
 cd src
-tar cf - $(find . -type f -and -not -name "*.java") | tar xvf - -C ../bin_build/
+tar cf - $(find . -type f -and -not -name "*.java") | tar xf - -C ../bin_build/
 cd ..
 
 for j in $(seq 1 10); do
